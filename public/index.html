@@ -19,64 +19,70 @@
             
             const yearArr = gdp.data.map((x)=>x[0]);
             const gdpArr = gdp.data.map((x)=>x[1]);
+            const maxY = d3.max(gdpArr);
+            const scaleFactorY = maxY/h;
+            const scaleFactorX = w/gdp.data.length;
             console.log(gdp.data);//debug
             console.log(yearArr); //debug
             console.log(gdpArr);  //debug
 
             const svg = d3.select("div")
                           .append("svg")
-                          .attr("width", w)
-                          .attr("height", h);
+                          .attr("width", w+PADDING*2)
+                          .attr("height", h+PADDING*2);
 
             svg.selectAll("rect")
-               .data(gdpArr)
+               .data(gdp.data)
                .enter()
                .append("rect")
-               .attr("x", (d, i) => (i * 3)+PADDING)
-               .attr("y", (d, i) => h-d/60-PADDING)
-               .attr("width", 15)
-               .attr("height", (d, i) => d/60)
+               .attr("x", (d, i) => (i * scaleFactorX)+PADDING)
+               .attr("y", (d, i) => h-d[1]/scaleFactorY)
+               .attr("width", w/275)
+               .attr("height", (d, i) => d[1]/scaleFactorY)
                .attr("fill", "navy")
                .attr("class", "bar")
+               .attr("data-date", (d)=>d[0])
+               .attr("data-gdp", (d)=>d[1])
                .on("mouseover", mouseover)
                .on("mouseout", mouseout);
            
             const xScale = d3.scaleTime()
                              .domain([new Date(d3.min(yearArr)), new Date(d3.max(yearArr))])
-                             .range([PADDING,w-PADDING]);
+                             .range([PADDING,w+PADDING]);
                              
             const xAxis = d3.axisBottom(xScale);
             svg.append("g")
                .attr("id","x-axis")
-               .attr("transform", "translate(-10,"+(h-PADDING)+")")
+               .attr("transform", "translate(0,"+(h)+")")
                .call(xAxis);
                
             const yScale = d3.scaleLinear()
-                             .domain([d3.min(gdpArr), d3.max(gdpArr)])
-                             .range([h+PADDING, PADDING])
+                             .domain([0, d3.max(gdpArr)])
+                             .range([h, 0])
                              
             const yAxis = d3.axisLeft(yScale);
             yAxis.ticks(10);
             svg.append("g")
                .attr("id","y-axis")
                .attr("transform", "translate("+PADDING+","+0+")")
-               <!-- .attr("transform", "translate(60,-100)") -->
                .call(yAxis)
                
             let div = d3.select("#container")
                         .append("div")
                         .attr("class","tooltip")
+                        .attr("id","tooltip")
                         .style("display","none")
-                        .html("something");
                         
             function mouseover() {
                 const current = d3.select(this);
                 let leftOffset = parseInt(current.attr("x"))+PADDING;
-                let topOffset = parseInt(current.attr("y"))-50;
-                console.log("current position: ",current.attr('x'),current.attr('y')); //debug
+                let topOffset = parseInt(current.attr("y"))+100;
+                <!-- console.log("current position: ",current.attr('x'),current.attr('y')); //debug -->
                 div.style("display","inline")
                    .style("left",leftOffset.toString()+"px")
-                   .style("top",topOffset.toString()+"px");
+                   .style("top",topOffset.toString()+"px")
+                   .attr("data-date",current.attr("data-date"))
+                   .html(current.attr("data-date")+"<br>"+" $"+current.attr("data-gdp")+" billion USD");
             }
             
             function mouseout() {
